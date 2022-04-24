@@ -172,9 +172,7 @@ fn main() {
             file.set_len(last_cmdindex as u64)
                 .expect("Failed truncate output file!");
         }
-    }
-
-    if !atty::is(atty::Stream::Stdin) {
+    }else if !atty::is(atty::Stream::Stdin) {
         let last_cmds = if is_exists {
             read_last_cmd(outpath)
         } else {
