@@ -8,11 +8,11 @@ function hs(){
 	then
 		n=`expr $1 \* 5`
 	fi
-	history $n|$HHSCRIPT
+	history $n|$HHSCRIPT $*
 }
 
 set -a
 HISTTIMEFORMAT="%F %T "
-HISTIGNORE="ls:ll:cd:pwd:bg:fg:history:cat:les:less:more"
+HISTIGNORE="ls:ll:cd:pwd:bg:fg:history:cat:les:less:more:exit:clear"
 alias hh="hs"
 set +a
