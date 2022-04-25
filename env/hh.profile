@@ -13,6 +13,7 @@ function hs(){
 
 set -a
 HISTTIMEFORMAT="%F %T "
-HISTIGNORE="ls:ll:cd:pwd:bg:fg:history:cat:les:less:more:exit:clear"
+HISTIGNORE="ls:ll:cd:pwd:bg:fg" # ignored by history and hh
+HHIGNORE="history:cat:les:less:more:exit:clear" #ignored by hh
 alias hh="hs"
 set +a

@@ -9,6 +9,7 @@ use std::{
 };
 
 const FILESIZE: usize = 102400;
+const HHIGNORE: &str = "HHIGNORE";
 const HISTIGNORE: &str = "HISTIGNORE";
 const HISTTIMEFORMAT: &str = "HISTTIMEFORMAT";
 const VERSION: &str = include_str!(concat!(env!("OUT_DIR"), "/VERSION"));
@@ -20,6 +21,12 @@ fn parse_hist_ignore() -> HashSet<String> {
             ret.insert(var.to_owned());
         }
     }
+
+    if let Ok(var) = env::var(HHIGNORE) {
+        for var in var.split(':') {
+            ret.insert(var.to_owned());
+        }
+    } 
     ret
 }
 
