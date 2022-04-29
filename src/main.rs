@@ -158,7 +158,7 @@ fn main() {
 			Arg::new("index")
 			.short('i')
 			.value_name("INT")
-			.requires("no_smart")
+			// .requires("no_smart")
 			.help("only record the INT record from last.")
 			.takes_value(true)
 		)
@@ -173,8 +173,8 @@ fn main() {
 		.get_matches();
 
     let valid_n: usize = args.value_of_t("INT").unwrap();
-    let no_smart = args.is_present("no_smart");
     let valid_i: usize = args.value_of_t("index").unwrap_or(0);
+    let no_smart = args.is_present("no_smart") || valid_i > 0;
     let outfile: String = args.value_of_t("output").unwrap();
     let outpath = Path::new(&outfile);
     let is_exists = outpath.exists();
