@@ -136,7 +136,7 @@ fn out_info(w: &mut dyn Write) {
 fn main() {
     let args = Command::new(crate_name!())
 		.version(VERSION)
-		.about("Record bash command history in current directory")
+		.about("Quickly save bash commands in the current directory")
 		.global_setting(AppSettings::DeriveDisplayOrder)
 		.arg(
 			Arg::new("INT")
