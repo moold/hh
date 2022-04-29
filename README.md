@@ -1,8 +1,8 @@
 # hh
-Quickly save useful bash commands. `hh` is designed to save useful commands you ran very easily and quickly, not aim to save all command records.
+Quickly save useful bash commands. `hh` is designed to save useful commands you just ran, not aim to save all command records.
 
 ## Motivation
-As a bioinformatics researcher, I use `Linux Bash` most of my work time. Many projects usually span months or even years, some analytical workflow or details often need to be backtracked when the project is to be completed. So in this case, I have to save some important bash commands. I use `vim` to open a file and paste the commands that have just been ran into this file for a long time, and this is a very troublesome thing, becasue I need to do it again and again. Also, if the saved command has errors or is dupulicated, I have to handled it by manually. `hh` was designed to solve this problem. When you typo `hh`, `hh` will automatically save the commands you just ran, and ignore some simple commands (from user settings).
+As a bioinformatics researcher, I use `Linux Bash` most of my work time. Many projects usually span months or even years, some analytical workflow or details often need to be backtracked when the project is to be completed. So in this case, I have to save some important bash commands. I usually use `vim` to open a file and paste the commands that have just been ran into this file, and this is a very troublesome thing, becasue I need to do it again and again. Also, if the saved command has errors or is dupulicated, I have to handled it by manually. `hh` was designed to solve this problem. When you typo `hh`, `hh` will automatically save the commands you just ran, and ignore some simple commands (from user settings).
 
 ## Features
 * Easily and quickly, hit the keyboard twice and finished within <= 10ms.
