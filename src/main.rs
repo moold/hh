@@ -1,5 +1,6 @@
 use clap::{crate_name, AppSettings, Arg, Command};
 use hashbrown::HashSet;
+use memchr::memmem::rfind_iter;
 use std::{
     env,
     fs::{self, OpenOptions},
@@ -75,39 +76,52 @@ fn get_last_cmdindex(buf: &[u8]) -> usize {
     0
 }
 
-fn read_last_cmd<P: AsRef<Path>>(path: P) -> (Vec<u8>, Vec<usize>) {
+fn read_out_cmd<P: AsRef<Path>>(path: P) -> (Vec<u8>, usize) {
     let buf = fs::read(path).expect("Failed read output file!");
-    let mut indexs = Vec::new();
-    let mut index = buf.len() - 1;
-    while index > 1 {
-        if buf[index - 1] == b'#' && buf[index] == b'>' {
-            break;
-        } else if buf[index - 1] == b'\n' {
-            indexs.push(index);
-        }
-        index -= 1;
-    }
-    (buf, indexs)
+    let last_pos = get_last_cmdindex(&buf);
+    (buf, last_pos)
 }
 
-fn is_dup_cmd(cmd1: &[u8], cmd2: &[&str]) -> bool {
-    let mut i = 0;
-    for var in cmd2 {
-        if *var == "&" || *var == "nohup" {
-            continue;
-        }
-        for v in var.as_bytes() {
-            if i < cmd1.len() && *v == cmd1[i] {
-                i += 1;
-            } else {
-                return false;
+fn is_dup_cmd(last_cmds:&(Vec<u8>, usize), lines: &[&str], index: usize) -> bool {
+
+    let (buf, last_indexs) = last_cmds;
+    let (date, time) = (lines[1].as_bytes(), lines[2].as_bytes());
+    let start = if lines[index] == "nohup" {
+        index + 1
+    }else {
+        index
+    };
+    let end = if lines.last().unwrap() == &"&" {
+        lines.len() - 1
+    }else {
+        lines.len()
+    };
+
+    let cmd = lines[start..end].join(" ");
+    for mut p in rfind_iter(&buf, cmd.as_bytes()) {
+        if p > *last_indexs{
+            return true;
+        }else {
+            p += cmd.len();
+            while char::is_whitespace(buf[p] as char) || buf[p] == b'#' {
+                p += 1;
             }
-        }
-        while char::is_whitespace(cmd1[i] as char) {
-            i += 1;
+            
+            if &buf[p..p + date.len()] != date {
+                continue;
+            }
+            p += date.len();
+            while char::is_whitespace(buf[p] as char) || buf[p] == b'#' {
+                p += 1;
+            }
+
+            if &buf[p..p + time.len()] != time {
+                continue;
+            }
+            return true;
         }
     }
-    i >= cmd1.len() || cmd1[i] == b'#'
+    return false;
 }
 
 fn out_info(w: &mut dyn Write) {
@@ -133,7 +147,7 @@ fn main() {
 		.arg(
 			Arg::new("no_smart")
 			.short('s')
-			.help("disable smart mode, commands from the HISTIGNORE environment variable are ignored in smart mode.")
+			.help("disable smart mode, commands from the HISTIGNORE/HHIGNORE environment variable are ignored in smart mode.")
 		)
 		.arg(
 			Arg::new("reset")
@@ -180,10 +194,10 @@ fn main() {
                 .expect("Failed truncate output file!");
         }
     }else if !atty::is(atty::Stream::Stdin) {
-        let last_cmds = if is_exists {
-            read_last_cmd(outpath)
+        let out_cmds = if is_exists {
+            read_out_cmd(outpath)
         } else {
-            (Vec::new(), Vec::new())
+            (Vec::new(), 0)
         };
         let user = get_user();
         let skip_cmds = parse_hist_ignore();
@@ -199,44 +213,27 @@ fn main() {
             out_info(&mut w);
         }
 
-        let mut input_cmds = String::with_capacity(FILESIZE);
+        let mut input_lines = String::with_capacity(FILESIZE);
         stdin()
-            .read_to_string(&mut input_cmds)
+            .read_to_string(&mut input_lines)
             .expect("Failed read from stdin!");
 
         let mut n = 0;
-        let mut out_sep = false;
-        let mut log = String::with_capacity(FILESIZE);
-        for cmd in input_cmds.split('\n').rev().skip(1) {
+        let mut valid_cmds: Vec<Vec<&str>> = Vec::with_capacity(FILESIZE);
+        for line in input_lines.split('\n').rev().skip(1) {
             //skip last line break
             if valid_i > 0 && n != valid_i - 1 {
                 continue;
             }
-            let cmds: Vec<&str> = cmd.split_ascii_whitespace().collect();
-            if cmds.len() <= cmd_index {
+            let lines: Vec<&str> = line.split_ascii_whitespace().collect();
+            if lines.len() <= cmd_index {
                 continue;
             }
-            let (date, time) = (cmds[1], cmds[2]);
-            let cmds = &cmds[cmd_index..];
-            if no_smart || !ignore(cmds, &skip_cmds) {
-                if !last_cmds
-                    .1
-                    .iter()
-                    .any(|x| is_dup_cmd(&last_cmds.0[*x..], cmds))
+            
+            if no_smart || !ignore(&lines[cmd_index..], &skip_cmds) {
+                if !is_dup_cmd(&out_cmds, &lines, cmd_index)
                 {
-                    if !out_sep {
-                        writeln!(w, "#> {}", user).expect("Failed write to output file!");
-                        out_sep = true;
-                    }
-                    for opt in cmds {
-                        if *opt != "&" && *opt != "nohup" {
-                            write!(w, "{} ", opt).expect("Failed write to output file!");
-                            log += opt;
-                            log.push(' ');
-                        }
-                    }
-                    writeln!(w, " # {} {}", date, time).expect("Failed write to output file!");
-                    log.push('\n');
+                    valid_cmds.push(lines);
                 }
                 n += 1;
                 if n >= valid_n {
@@ -244,8 +241,21 @@ fn main() {
                 }
             }
         }
-        if !log.is_empty() {
-            eprintln!("\x1b[1;35m{}\x1b[0m", log);
+        if !valid_cmds.is_empty() {
+            writeln!(w, "#> {}", user).expect("Failed write to output file!");
+            eprint!("\x1b[1;35m");
+            for lines in valid_cmds.iter().rev(){
+                let (date, time, cmds) = (lines[1], lines[2], &lines[cmd_index..]);
+                for opt in cmds {
+                    if *opt != "&" && *opt != "nohup" {
+                        write!(w, "{} ", opt).expect("Failed write to output file!");
+                        eprint!("{} ", opt);
+                    }
+                }
+                writeln!(w, " # {} {}", date, time).expect("Failed write to output file!");
+                eprintln!();
+            }
+            eprint!("\n\x1b[0m");
         }
     }
 }
