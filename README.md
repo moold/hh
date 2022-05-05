@@ -27,7 +27,7 @@ cd hh && cargo build --release
 
 #### Configure 
 ```
-echo "source `getcwd`/env/hh.profile" >> $HOME/.bash_profile
+echo "source `pwd`/env/hh.profile" >> $HOME/.bash_profile
 ```
 ***Note*** :
 * You can refresh your environment variables by `source $HOME/.bash_profile` if you don't want to relogin but want to use `hh` immediately.
