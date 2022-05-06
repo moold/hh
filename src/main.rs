@@ -222,7 +222,8 @@ fn main() {
         let mut valid_cmds: Vec<Vec<&str>> = Vec::with_capacity(FILESIZE);
         for line in input_lines.split('\n').rev().skip(1) {
             //skip last line break
-            if valid_i > 0 && n != valid_i - 1 {
+            if valid_i > 0 && n != valid_i {
+                n += 1;
                 continue;
             }
             let lines: Vec<&str> = line.split_ascii_whitespace().collect();
