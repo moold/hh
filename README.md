@@ -16,7 +16,10 @@ As a bioinformatics researcher, I use `Linux Bash` most of my work time. Many pr
 
 #### Dependencies
 
-`hh` is written in rust, see [here](https://www.rust-lang.org/tools/install) to install `Rust` first.
+`hh` is written in rust, try below commands (no root required) or see [here](https://www.rust-lang.org/tools/install) to install `Rust` first.
+```
+curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+```
 
 #### Download and install
 
