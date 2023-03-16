@@ -144,6 +144,11 @@ fn main() {
 			.help("only record INT valid commands.")
 			.takes_value(true)
 		)
+        .arg(
+            Arg::new("list")
+            .short('l')
+            .help("view previously executed commands and corresponding numbers.")
+        )
 		.arg(
 			Arg::new("no_smart")
 			.short('s')
@@ -174,7 +179,8 @@ fn main() {
 
     let valid_n: usize = args.value_of_t("INT").unwrap();
     let valid_i: usize = args.value_of_t("index").unwrap_or(0);
-    let no_smart = args.is_present("no_smart") || valid_i > 0;
+    let no_smart = args.is_present("no_smart");
+    let outlist = args.is_present("list");
     let outfile: String = args.value_of_t("output").unwrap();
     let outpath = Path::new(&outfile);
     let is_exists = outpath.exists();
@@ -202,17 +208,6 @@ fn main() {
         let user = get_user();
         let skip_cmds = parse_hist_ignore();
         let cmd_index = parse_hist_format() + 1;
-
-        let out = OpenOptions::new()
-            .append(true)
-            .create(true)
-            .open(outpath)
-            .expect("Failed open output file!");
-        let mut w = BufWriter::with_capacity(FILESIZE, out);
-        if !is_exists {
-            out_info(&mut w);
-        }
-
         let mut input_lines = String::with_capacity(FILESIZE);
         stdin()
             .read_to_string(&mut input_lines)
@@ -222,27 +217,48 @@ fn main() {
         let mut valid_cmds: Vec<Vec<&str>> = Vec::with_capacity(FILESIZE);
         for line in input_lines.split('\n').rev().skip(1) {
             //skip last line break
+            n += 1;
             if valid_i > 0 && n != valid_i {
-                n += 1;
+                println!("{:?} {}", n, line);
                 continue;
             }
             let lines: Vec<&str> = line.split_ascii_whitespace().collect();
             if lines.len() <= cmd_index {
                 continue;
             }
-            
-            if no_smart || !ignore(&lines[cmd_index..], &skip_cmds) {
-                if !is_dup_cmd(&out_cmds, &lines, cmd_index)
-                {
+        
+            if no_smart || valid_i > 0 || !ignore(&lines[cmd_index..], &skip_cmds) {
+                if outlist {
+                    print!("{:<3}  ", n + 1);
+                    let (date, time, cmds) = (lines[1], lines[2], &lines[cmd_index..]);
+
+                    for opt in cmds {
+                        if *opt != "&" && *opt != "nohup" {
+                            print!("{} ", opt);
+                        }
+                    }
+                    println!(" # {} {}", date, time);
+                }else if !is_dup_cmd(&out_cmds, &lines, cmd_index){
                     valid_cmds.push(lines);
-                }
-                n += 1;
-                if n >= valid_n {
-                    break;
+                
+                    if valid_cmds.len() >= valid_n {
+                        break;
+                    }
                 }
             }
         }
         if !valid_cmds.is_empty() {
+
+            let out = OpenOptions::new()
+                .append(true)
+                .create(true)
+                .open(outpath)
+                .expect("Failed open output file!");
+            let mut w = BufWriter::with_capacity(FILESIZE, out);
+            if !is_exists {
+                out_info(&mut w);
+            }
+
             writeln!(w, "#> {}", user).expect("Failed write to output file!");
             eprint!("\x1b[1;35m");
             for lines in valid_cmds.iter().rev(){

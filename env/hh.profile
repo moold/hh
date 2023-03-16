@@ -18,6 +18,7 @@ function hs(){
 set -a
 HISTTIMEFORMAT="%F %T "
 HISTIGNORE="ls:ll:cd:pwd:bg:fg" # ignored by history and hh
-HHIGNORE="history:cat:les:less:more:exit:clear:top:source:vim:git:htop:ps:free:qstat:qhost" # ignored by hh
+HHIGNORE="history:cat:les:less:more:exit:clear:top:source:vim:git:htop:ps:free:qstat:qhost:hh:hhh:hs" # ignored by hh
 alias hh="hs"
+alias hhh="hh -l"
 set +a
