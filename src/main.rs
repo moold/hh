@@ -219,7 +219,6 @@ fn main() {
             //skip last line break
             n += 1;
             if valid_i > 0 && n != valid_i {
-                println!("{:?} {}", n, line);
                 continue;
             }
             let lines: Vec<&str> = line.split_ascii_whitespace().collect();
